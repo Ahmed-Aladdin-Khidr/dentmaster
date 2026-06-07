@@ -1,5 +1,13 @@
 import 'package:get_it/get_it.dart';
 import 'core/database/app_database.dart';
+import 'features/data_management/data/datasources/data_management_datasource.dart';
+import 'features/data_management/data/repositories/data_management_repository_impl.dart';
+import 'features/data_management/domain/repositories/data_management_repository.dart';
+import 'features/data_management/domain/usecases/export_data.dart';
+import 'features/data_management/domain/usecases/get_data_stats.dart';
+import 'features/data_management/domain/usecases/import_data.dart';
+import 'features/data_management/domain/usecases/preview_import.dart';
+import 'features/data_management/presentation/bloc/data_management_bloc.dart';
 import 'features/patient/data/datasources/patient_local_datasource.dart';
 import 'features/patient/data/repositories/patient_repository_impl.dart';
 import 'features/patient/domain/repositories/patient_repository.dart';
@@ -66,6 +74,28 @@ Future<void> initDependencies() async {
         deleteAppointment: sl(),
         addAppointmentImage: sl(),
         deleteAppointmentImage: sl(),
+      ));
+
+  // Data management datasource + repository
+  sl.registerLazySingleton<DataManagementDatasource>(
+    () => DataManagementDatasourceImpl(sl()),
+  );
+  sl.registerLazySingleton<DataManagementRepository>(
+    () => DataManagementRepositoryImpl(sl()),
+  );
+
+  // Use cases — data management
+  sl.registerLazySingleton(() => GetDataStats(sl()));
+  sl.registerLazySingleton(() => ExportData(sl()));
+  sl.registerLazySingleton(() => PreviewImport(sl()));
+  sl.registerLazySingleton(() => ImportData(sl()));
+
+  // BLoC — data management
+  sl.registerFactory(() => DataManagementBloc(
+        getDataStats: sl(),
+        exportData: sl(),
+        previewImport: sl(),
+        importData: sl(),
       ));
 
   // Auth — Phase 9
