@@ -752,4 +752,5 @@ flutter test
 
 ---
 
-*This plan is the source of truth. Update it as decisions are made or scope changes.*
+*This plan is the source of truth. Update it as decisions are made or scope changes.*  
+*For step-by-step execution instructions, exact commands, and verification gates see [`EXECUTION_PLAN.md`](EXECUTION_PLAN.md).*

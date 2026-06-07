@@ -38,7 +38,8 @@ It stores all data on the device using SQLite (Drift). No cloud, no auth, no net
 **DI:** get_it + injectable (code-gen based).  
 **Routing:** go_router (declarative).
 
-Master plan: [`PLAN.md`](PLAN.md) — consult it for scope, data models, and phase status.
+Master plan: [`PLAN.md`](PLAN.md) — consult it for scope, data models, and phase status.  
+Execution plan: [`EXECUTION_PLAN.md`](EXECUTION_PLAN.md) — step-by-step commands, exact file content shapes, and verification gates for every phase.
 
 ---
 
@@ -606,6 +607,7 @@ Quick navigation for agents and developers:
 | `lib/features/data_management/presentation/pages/data_management_page.dart` | Export/import screen |
 | `PLAN.md` | Master plan — phases, data models, package list |
 | `AGENTS.md` | This file — system design and git rules |
+| `EXECUTION_PLAN.md` | Step-by-step commands and verification gates per phase |
 
 ---
 
