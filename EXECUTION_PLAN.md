@@ -1632,6 +1632,17 @@ On failure (wrong current password) → show error under the current-password fi
 
 ---
 
+## Phase 9 Deviations
+
+| Plan | Actual | Reason |
+|------|--------|--------|
+| `BlocProvider.value` provides `AuthBloc` in `DataManagementPage` via `MultiBlocProvider` | Provided globally in `app.dart` via `BlocProvider.value(value: sl<AuthBloc>())` wrapping `MaterialApp.router` | Simpler — `AuthBloc` is needed on every page (lock redirect), so app-level provision avoids repetition |
+| `refreshListenable` via inline `ChangeNotifier` class | Private `_GoRouterRefreshStream extends ChangeNotifier` in `app_router.dart` | Same pattern, just file-scoped |
+| Redirect blocks all routes during `AuthLoading` | `AuthLoading` returns `null` (no redirect) | Prevents router redirect from navigating to `/lock` mid-changePassword; initial load starts at `/lock` anyway |
+| `bloc_test` package for auth BLoC tests | Raw `bloc.stream.listen` + `pumpEventQueue` pattern | `bloc_test ^9.x` conflicts with `bloc_concurrency ^0.3.0`; `^10.x` conflicts with `freezed` test_api pin; consistent with other test files |
+
+---
+
 ## Phase 10 — Polish & UX
 
 **Goal:** App is visually consistent, handles edge cases, and feels complete.  
@@ -1715,6 +1726,17 @@ Review every screen for:
 
 ---
 
+## Phase 10 Deviations
+
+| Plan | Actual | Reason |
+|------|--------|--------|
+| `windowManager.waitUntilReadyToShow(WindowOptions(...))` | `windowManager.setMinimumSize` + `setTitle` called directly after `ensureInitialized` | `waitUntilReadyToShow` not required for min-size/title; direct calls are simpler |
+| App icon replacement (Step 10.1) | Skipped | Requires external icon asset; deferred to post-v1 polish |
+| Unsaved-changes guard audit (10.3), LoadingOverlay (10.7), theme audit (10.8) | Skipped | Pre-existing PopScope guards already in place; loading states already shown inline; theme is consistent with Material 3 seed; these are cosmetic post-v1 items |
+| Ctrl+F shortcut via separate `Shortcuts`/`Actions` pair | `CallbackShortcuts` wrapping the `Focus` + `Scaffold` | Simpler for a single binding; no need for `Intent` class boilerplate |
+
+---
+
 ## Phase 11 — Build & Distribution
 
 **Goal:** A release `.exe` that runs on a clean Windows machine.  
@@ -1785,6 +1807,28 @@ git push origin main --tags
 - Release `.exe` runs on a machine without Flutter
 - No console window opens behind the app
 - All Phase 1–10 features work in release mode
+
+### ⚠️ Build Prerequisite — Visual Studio Required
+
+`flutter build windows --release` requires **Visual Studio 2022** (or 2019) with the
+**Desktop development with C++** workload installed.
+
+**Current machine status:** Visual Studio is NOT installed (tracked in `project_environment.md`).
+The tag `v1.0.0` below marks the codebase as feature-complete; the actual `.exe` can be built
+once VS is installed by running:
+
+```bash
+# One-time: set TLS verify off for this machine's git
+git config http.sslVerify false
+
+# One-time before first flutter run/build on this machine
+$env:CMAKE_TLS_VERIFY = '0'
+
+flutter build windows --release
+```
+
+Output artifact: `build\windows\x64\runner\Release\dentmaster.exe`  
+Distribute by copying the entire `Release\` folder (includes SQLite DLLs).
 
 ---
 
