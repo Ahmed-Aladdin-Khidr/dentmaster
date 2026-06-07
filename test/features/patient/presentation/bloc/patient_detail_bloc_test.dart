@@ -5,6 +5,7 @@ import 'package:dentmaster/features/patient/domain/entities/appointment_image.da
 import 'package:dentmaster/features/patient/domain/entities/patient.dart';
 import 'package:dentmaster/features/patient/domain/usecases/add_appointment.dart';
 import 'package:dentmaster/features/patient/domain/usecases/add_appointment_image.dart';
+import 'package:dentmaster/features/patient/domain/usecases/create_patient.dart';
 import 'package:dentmaster/features/patient/domain/usecases/delete_appointment.dart';
 import 'package:dentmaster/features/patient/domain/usecases/delete_appointment_image.dart';
 import 'package:dentmaster/features/patient/domain/usecases/delete_patient.dart';
@@ -16,6 +17,7 @@ import 'package:dentmaster/features/patient/presentation/bloc/patient_detail/pat
 import 'package:dentmaster/features/patient/presentation/bloc/patient_detail/patient_detail_state.dart';
 
 class MockGetPatientById extends Mock implements GetPatientById {}
+class MockCreatePatient extends Mock implements CreatePatient {}
 class MockUpdatePatient extends Mock implements UpdatePatient {}
 class MockDeletePatient extends Mock implements DeletePatient {}
 class MockAddAppointment extends Mock implements AddAppointment {}
@@ -30,6 +32,7 @@ class _FakeAppointmentImage extends Fake implements AppointmentImage {}
 
 PatientDetailBloc _makeBloc({
   required MockGetPatientById getPatientById,
+  required MockCreatePatient createPatient,
   required MockUpdatePatient updatePatient,
   required MockDeletePatient deletePatient,
   required MockAddAppointment addAppointment,
@@ -40,6 +43,7 @@ PatientDetailBloc _makeBloc({
 }) =>
     PatientDetailBloc(
       getPatientById: getPatientById,
+      createPatient: createPatient,
       updatePatient: updatePatient,
       deletePatient: deletePatient,
       addAppointment: addAppointment,
@@ -57,6 +61,7 @@ void main() {
   });
 
   late MockGetPatientById mockGetPatientById;
+  late MockCreatePatient mockCreatePatient;
   late MockUpdatePatient mockUpdatePatient;
   late MockDeletePatient mockDeletePatient;
   late MockAddAppointment mockAddAppointment;
@@ -91,6 +96,7 @@ void main() {
 
   setUp(() {
     mockGetPatientById = MockGetPatientById();
+    mockCreatePatient = MockCreatePatient();
     mockUpdatePatient = MockUpdatePatient();
     mockDeletePatient = MockDeletePatient();
     mockAddAppointment = MockAddAppointment();
@@ -100,6 +106,7 @@ void main() {
     mockDeleteAppointmentImage = MockDeleteAppointmentImage();
     bloc = _makeBloc(
       getPatientById: mockGetPatientById,
+      createPatient: mockCreatePatient,
       updatePatient: mockUpdatePatient,
       deletePatient: mockDeletePatient,
       addAppointment: mockAddAppointment,
@@ -377,6 +384,72 @@ void main() {
 
       verify(() => mockDeleteAppointmentImage('img-1')).called(1);
       verify(() => mockDeleteAppointmentImage('img-2')).called(1);
+    });
+  });
+
+  group('PatientDetailCreateStarted', () {
+    test('emits createMode', () async {
+      final states = <PatientDetailState>[];
+      final sub = bloc.stream.listen(states.add);
+
+      bloc.add(const PatientDetailEvent.createStarted());
+      await Future.delayed(const Duration(milliseconds: 20));
+      await sub.cancel();
+
+      expect(states.single, isA<PatientDetailCreateMode>());
+    });
+  });
+
+  group('PatientDetailCreated', () {
+    test('emits saving then viewMode with the new patient', () async {
+      final newPatient = Patient(
+        id: 'new-1',
+        fullName: 'New Patient',
+        createdAt: now,
+        updatedAt: now,
+      );
+      when(() => mockCreatePatient(any())).thenAnswer((_) async {});
+      when(() => mockGetPatientById('new-1'))
+          .thenAnswer((_) async => newPatient);
+
+      bloc.add(const PatientDetailEvent.createStarted());
+      await Future.delayed(const Duration(milliseconds: 20));
+
+      final states = <PatientDetailState>[];
+      final sub = bloc.stream.listen(states.add);
+
+      bloc.add(PatientDetailEvent.created(newPatient));
+      await Future.delayed(const Duration(milliseconds: 50));
+      await sub.cancel();
+
+      expect(states[0], isA<PatientDetailSaving>());
+      expect(states[1], isA<PatientDetailViewMode>());
+      expect((states[1] as PatientDetailViewMode).patient.id, 'new-1');
+      verify(() => mockCreatePatient(newPatient)).called(1);
+    });
+
+    test('emits failure when patient not found after create', () async {
+      final newPatient = Patient(
+        id: 'new-1',
+        fullName: 'New Patient',
+        createdAt: now,
+        updatedAt: now,
+      );
+      when(() => mockCreatePatient(any())).thenAnswer((_) async {});
+      when(() => mockGetPatientById('new-1')).thenAnswer((_) async => null);
+
+      bloc.add(const PatientDetailEvent.createStarted());
+      await Future.delayed(const Duration(milliseconds: 20));
+
+      final states = <PatientDetailState>[];
+      final sub = bloc.stream.listen(states.add);
+
+      bloc.add(PatientDetailEvent.created(newPatient));
+      await Future.delayed(const Duration(milliseconds: 50));
+      await sub.cancel();
+
+      expect(states[0], isA<PatientDetailSaving>());
+      expect(states[1], isA<PatientDetailFailure>());
     });
   });
 
