@@ -15,6 +15,7 @@ import 'features/patient/domain/usecases/search_patients.dart';
 import 'features/patient/domain/usecases/update_appointment.dart';
 import 'features/patient/domain/usecases/update_patient.dart';
 import 'features/patient/presentation/bloc/patient_list/patient_list_bloc.dart';
+import 'features/patient/presentation/bloc/patient_detail/patient_detail_bloc.dart';
 
 final sl = GetIt.instance;
 
@@ -53,6 +54,13 @@ Future<void> initDependencies() async {
   sl.registerFactory(() => PatientListBloc(
         getAllPatients: sl(),
         searchPatients: sl(),
+      ));
+
+  sl.registerFactory(() => PatientDetailBloc(
+        getPatientById: sl(),
+        updatePatient: sl(),
+        deletePatient: sl(),
+        deleteAppointment: sl(),
       ));
 
   // Auth — Phase 9
