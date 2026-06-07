@@ -22,6 +22,14 @@ import 'features/patient/domain/usecases/get_patient_by_id.dart';
 import 'features/patient/domain/usecases/search_patients.dart';
 import 'features/patient/domain/usecases/update_appointment.dart';
 import 'features/patient/domain/usecases/update_patient.dart';
+import 'features/auth/data/datasources/auth_local_datasource.dart';
+import 'features/auth/data/repositories/auth_repository_impl.dart';
+import 'features/auth/domain/repositories/auth_repository.dart';
+import 'features/auth/domain/usecases/change_password.dart';
+import 'features/auth/domain/usecases/is_password_set.dart';
+import 'features/auth/domain/usecases/setup_password.dart';
+import 'features/auth/domain/usecases/verify_password.dart';
+import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/patient/presentation/bloc/patient_list/patient_list_bloc.dart';
 import 'features/patient/presentation/bloc/patient_detail/patient_detail_bloc.dart';
 
@@ -99,4 +107,20 @@ Future<void> initDependencies() async {
       ));
 
   // Auth — Phase 9
+  sl.registerLazySingleton<AuthLocalDatasource>(
+    () => AuthLocalDatasourceImpl(),
+  );
+  sl.registerLazySingleton<AuthRepository>(
+    () => AuthRepositoryImpl(sl()),
+  );
+  sl.registerLazySingleton(() => IsPasswordSet(sl()));
+  sl.registerLazySingleton(() => SetupPassword(sl()));
+  sl.registerLazySingleton(() => VerifyPassword(sl()));
+  sl.registerLazySingleton(() => ChangePassword(sl()));
+  sl.registerSingleton<AuthBloc>(AuthBloc(
+    isPasswordSet: sl(),
+    setupPassword: sl(),
+    verifyPassword: sl(),
+    changePassword: sl(),
+  ));
 }

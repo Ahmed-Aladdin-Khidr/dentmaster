@@ -1496,6 +1496,20 @@ sl.registerFactory(() => DataManagementBloc(
 - Import: pick the ZIP, preview shows correct counts, confirm replaces data
 - Manual: add a patient → export → delete patient → import → patient is back
 
+### Deviations from Plan (recorded 2026-06-08)
+
+**`DataStats` is a separate entity file** — Plan's Step 8.1 placed `DataStats` inline in the repository file. Moved to `lib/features/data_management/domain/entities/data_stats.dart` to follow the clean architecture convention (entities belong in `domain/entities/`).
+
+**`PreviewImport` added as a 4th use case** — Plan listed 3 use cases (`GetDataStats`, `ExportData`, `ImportData`). A 4th — `PreviewImport` — was added and lives at `lib/features/data_management/domain/usecases/preview_import.dart`. The preview path opens the ZIP, extracts the SQLite to a temp file, opens a temporary `NativeDatabase`, queries row counts, and returns `DataStats` for the incoming backup.
+
+**Export uses `ZipFileEncoder` (file-based streaming)** — Plan's Step 8.2 built an in-memory `Archive` object with `ZipEncoder().encode()`. Replaced with `ZipFileEncoder` from `package:archive/archive_io.dart` which streams directly to disk. Avoids loading the entire database + images into RAM.
+
+**`ZipDecoder.decodeBuffer` not `decodeStream`** — The archive 3.x API exposes `decodeBuffer(InputFileStream)`, not `decodeStream`. Both import and preview use `InputFileStream` + `decodeBuffer`.
+
+**Import: `exit(0)` instead of re-registering AppDatabase** — Plan's Step 8.3 called for `sl.unregister<AppDatabase>()` + `sl.registerSingleton<AppDatabase>(AppDatabase())` after extraction. The re-register approach risks crashes if any in-flight BLoC event handler accesses the closed DB between close and re-register. Replaced with: close DB → replace files → emit `importSuccess` → UI shows "Restart Now" button calling `exit(0)`. App re-opens with a fresh DB connection.
+
+**`DataManagementDatasourceImpl` injects `AppDatabase`** — Plan's datasource was independent and obtained its connection via `path_provider`. The implementation injects `AppDatabase` directly so it can run `PRAGMA wal_checkpoint(FULL)` and query row counts via `customSelect`.
+
 ---
 
 ## Phase 9 — App Lock / Password Protection
