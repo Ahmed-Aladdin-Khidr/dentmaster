@@ -20,17 +20,6 @@ class PatientDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (patientId == null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('New Patient')),
-        body: const Center(
-          child: Text(
-            'Phase 7 — Add Patient (coming soon)',
-            textAlign: TextAlign.center,
-          ),
-        ),
-      );
-    }
     return BlocProvider(
       create: (_) => sl<PatientDetailBloc>()
         ..add(patientId != null
