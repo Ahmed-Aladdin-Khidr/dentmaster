@@ -1080,6 +1080,16 @@ GoRoute(path: '/data-management', builder: (_, __) =>
 Use a temporary button or DB Browser for SQLite to add 2–3 patients directly to the DB.  
 Verify search filters them correctly.
 
+#### Deviation (recorded 2026-06-07) — no DB Browser available on this machine
+
+DB Browser for SQLite is not installed. Seed data is injected programmatically via `lib/core/utils/dev_seeder.dart`:
+- `seedTestDataIfEmpty()` is called from `main()` before `runApp()`
+- Guarded by `kDebugMode` (Flutter constant) — no-ops in release builds
+- Checks `GetAllPatients` first; only seeds when the DB is completely empty
+- Seeds 4 realistic dental patients: Ahmed Hassan (3 appointments), Sara Mohamed (2 appointments), Omar Khalil (2 appointments), Nour Ibrahim (0 appointments — tests empty-appointments state)
+- Uses fixed string IDs (`seed-p001` … `seed-p004`, `seed-a001` … `seed-a007`) to ensure idempotency if somehow called twice
+- Calls `CreatePatient` and `AddAppointment` use cases through the DI container — no direct DB access
+
 ### Verification Gate ✓
 
 - App shows list of patients on launch
