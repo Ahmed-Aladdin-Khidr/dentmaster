@@ -227,7 +227,14 @@ lib/
 | `archive` | ^3.x | ZIP creation for export bundle |
 | `file_picker` | (same) | Save file / open file dialogs |
 
-### 4.5 UI
+### 4.5 Authentication / Security
+
+| Package | Version | Purpose |
+|---|---|---|
+| `bcrypt` | ^1.x | Hash and verify the app password (never store plaintext) |
+| `shared_preferences` | ^2.x | Store the password hash and first-run flag locally |
+
+### 4.6 UI
 
 | Package | Version | Purpose |
 |---|---|---|
@@ -235,7 +242,7 @@ lib/
 | `flutter_staggered_animations` | ^1.x | List entry animations |
 | `gap` | ^3.x | Spacing widget (replaces SizedBox padding everywhere) |
 
-### 4.6 Dev / Code Generation
+### 4.7 Dev / Code Generation
 
 | Package | Version | Purpose |
 |---|---|---|
@@ -284,15 +291,27 @@ DentMaster
 │   │   └── Remove image (confirm)
 │   └── Save / cancel
 │
-└── F5 — Data Management
-    ├── Export all data
-    │   ├── Creates ZIP: db file + images folder
-    │   └── Save-as dialog → user picks location
-    └── Import data
-        ├── Open-file dialog → pick ZIP
-        ├── Preview: patient count, appointment count
-        ├── Confirm dialog (will overwrite current data)
-        └── Restore from ZIP
+├── F5 — Data Management
+│   ├── Export all data
+│   │   ├── Creates ZIP: db file + images folder
+│   │   └── Save-as dialog → user picks location
+│   └── Import data
+│       ├── Open-file dialog → pick ZIP
+│       ├── Preview: patient count, appointment count
+│       ├── Confirm dialog (will overwrite current data)
+│       └── Restore from ZIP
+│
+└── F6 — App Lock (Password Protection)
+    ├── Lock screen on app launch
+    │   ├── Password input field
+    │   └── Submit → unlock app
+    ├── First-run setup
+    │   ├── Prompted to set a password on very first launch
+    │   └── Password stored as bcrypt hash in local config file
+    └── Change password (in Data Management screen)
+        ├── Enter current password
+        ├── Enter new password + confirm
+        └── Save
 ```
 
 ---
@@ -393,8 +412,37 @@ DentMaster
 │  │                          │                    │
 │  │  [Select ZIP File]       │                    │
 │  └──────────────────────────┘                    │
+│                                                  │
+│  ┌──────────────────────────┐                    │
+│  │  CHANGE PASSWORD         │                    │
+│  │  Current password: [   ] │                    │
+│  │  New password:     [   ] │                    │
+│  │  Confirm new:      [   ] │                    │
+│  │                          │                    │
+│  │  [Update Password]       │                    │
+│  └──────────────────────────┘                    │
 └──────────────────────────────────────────────────┘
 ```
+
+### 6.5 Lock Screen (App Launch)
+
+```
+┌──────────────────────────────────────────────────┐
+│                                                  │
+│                  DentMaster                      │
+│                                                  │
+│            Enter your password                   │
+│          ┌────────────────────────┐              │
+│          │  ••••••••              │              │
+│          └────────────────────────┘              │
+│                                                  │
+│                  [Unlock]                        │
+│                                                  │
+└──────────────────────────────────────────────────┘
+```
+
+Shown on every app launch before any data is accessible.  
+On first-ever launch (no password set): prompt to create a password instead.
 
 ---
 
@@ -625,22 +673,41 @@ TABLE appointment_images
 ### Phase 8 — Data Management (F5)
 - [ ] Export: ZIP creation, file save dialog
 - [ ] Import: ZIP read, preview dialog, confirm, restore
+- [ ] Change password UI in Data Management screen
 - [ ] Manual test: export → delete a patient → import → verify patient back
 
-### Phase 9 — Polish & UX
+### Phase 9 — App Lock / Password Protection (F6)
+- [ ] First-run password setup screen
+- [ ] Lock screen shown on every app launch
+- [ ] `bcrypt` hash + verify password using `bcrypt` package
+- [ ] Store hash and first-run flag in `shared_preferences`
+- [ ] `AuthBloc` (setup, unlock, change password events + states)
+- [ ] Route guard: redirect to lock screen if not authenticated
+- [ ] Change password flow wired into Data Management screen
+- [ ] Manual test: set password → restart app → verify lock → wrong password → correct password
+
+### Phase 10 — Polish & UX
 - [ ] App icon (Windows `.ico`)
 - [ ] Window title and minimum size
 - [ ] Keyboard navigation (Tab order, Enter to save)
+- [ ] Unsaved-changes guard on all forms (discard changes dialog)
 - [ ] Empty states (no patients, no appointments)
 - [ ] Error states (DB failure, file access error)
 - [ ] Consistent typography and color theme
 - [ ] Loading indicators for DB operations
 
-### Phase 10 — Build & Distribution
+### Phase 11 — Build & Distribution
 - [ ] `flutter build windows --release`
 - [ ] Output: `build\windows\x64\runner\Release\dentmaster.exe`
 - [ ] Test on a clean machine (no Flutter dev tools)
 - [ ] Optional: package with Inno Setup or MSIX installer
+
+### Phase 12 — DB Encryption (post-v1)
+- [ ] Evaluate `sqlcipher_flutter_libs` for Windows desktop compatibility
+- [ ] Derive encryption key from app password (PBKDF2 or argon2)
+- [ ] Migrate existing unencrypted DB to encrypted on upgrade
+- [ ] Update export/import to handle encrypted DB correctly
+- [ ] Update AGENTS.md and PLAN.md when this phase is started
 
 ---
 
@@ -652,12 +719,12 @@ TABLE appointment_images
 | 2 | ORM | **Drift** chosen over Isar (less mature desktop support) or ObjectBox (paid for some features). |
 | 3 | Image compression on Windows | `flutter_image_compress` requires native plugin — test on Windows. Fallback: `image` package (pure Dart, always works). |
 | 4 | App window management | Use `window_manager` package (Phase 9) to set minimum window size and title bar. |
-| 5 | Multi-window | Out of scope. Single window, no MDI. |
-| 6 | Authentication | Out of scope for v1. App is single-user, local-only. |
-| 7 | Cloud sync | Out of scope for v1. Export/import covers basic portability. |
-| 8 | Undo/redo | Out of scope for v1. Confirm dialogs are the safety net. |
-| 9 | Image format support | Accept: jpg, jpeg, png, bmp, gif, webp. Save as JPEG internally. |
-| 10 | DB encryption | Not implemented in v1. SQLite file is unencrypted. |
+| 5 | Multi-window | **Permanently out of scope.** Single window, no MDI. Decision is final — not revisited in future phases. |
+| 6 | Authentication | **Simple app-level password protection in v1.** On launch, prompt for a password before showing any data. No user accounts — single password for the whole app. Store as a bcrypt hash in a local config file (never plaintext). Add a "Change Password" option in Data Management screen. |
+| 7 | Cloud sync | **Permanently out of scope.** Export/import ZIP covers portability. |
+| 8 | Undo/redo | **No undo/redo.** Instead: unsaved-changes guard on every form — if the user navigates away or closes a form with unsaved edits, show a "Discard changes?" confirm dialog. Confirm dialogs cover destructive deletes. |
+| 9 | Image format support | Accept: jpg, jpeg, png, bmp, gif, webp. **Re-encoding rule:** if source is already JPEG and dentist chooses "Keep Original", copy the file as-is (no re-encode, no quality loss). Only re-encode when dentist chooses "Use Compressed", or when source is a non-JPEG format (PNG, BMP, etc.). |
+| 10 | DB encryption | **Planned for a later phase (post-v1).** App-level SQLite encryption using `sqlcipher_flutter_libs` or equivalent. The password from decision #6 will be used as (or used to derive) the encryption key, so both features are implemented together. Flag this as a Phase 11 task when scoping. |
 
 ---
 

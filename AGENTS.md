@@ -494,8 +494,10 @@ Tag `main` after each completed phase:
 v0.1.0  — Phase 1-3 complete (scaffold + data + domain)
 v0.2.0  — Phase 4-5 complete (patient search + detail)
 v0.3.0  — Phase 6-7 complete (appointments + add patient)
-v0.4.0  — Phase 8 complete (data management)
-v1.0.0  — Phase 9-10 complete (polished + releasable build)
+v0.4.0  — Phase 8 complete (data management + change password UI)
+v0.5.0  — Phase 9 complete (app lock / password protection)
+v1.0.0  — Phase 10-11 complete (polished + releasable build)
+v1.x.0  — Phase 12 (DB encryption, post-v1 planned)
 ```
 
 Tag format:
