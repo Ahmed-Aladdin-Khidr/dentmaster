@@ -192,6 +192,7 @@ lib/
 | Package | Version | Purpose |
 |---|---|---|
 | `flutter_bloc` | ^9.x | State management (BLoC pattern) |
+| `bloc_concurrency` | ^0.x | `restartable()` EventTransformer for BLoC debounce (search) |
 | `equatable` | ^2.x | Value equality for entities/states |
 | `get_it` | ^8.x | Service locator / DI container |
 | `injectable` | ^2.x | Code-gen annotations for get_it |
