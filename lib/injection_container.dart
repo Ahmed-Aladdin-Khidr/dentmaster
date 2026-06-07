@@ -14,6 +14,7 @@ import 'features/patient/domain/usecases/get_patient_by_id.dart';
 import 'features/patient/domain/usecases/search_patients.dart';
 import 'features/patient/domain/usecases/update_appointment.dart';
 import 'features/patient/domain/usecases/update_patient.dart';
+import 'features/patient/presentation/bloc/patient_list/patient_list_bloc.dart';
 
 final sl = GetIt.instance;
 
@@ -48,6 +49,11 @@ Future<void> initDependencies() async {
   sl.registerLazySingleton(() => AddAppointmentImage(sl()));
   sl.registerLazySingleton(() => DeleteAppointmentImage(sl()));
 
-  // BLoCs — Phase 4+
+  // BLoCs
+  sl.registerFactory(() => PatientListBloc(
+        getAllPatients: sl(),
+        searchPatients: sl(),
+      ));
+
   // Auth — Phase 9
 }

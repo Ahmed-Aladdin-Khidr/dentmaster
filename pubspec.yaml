@@ -13,6 +13,7 @@ dependencies:
 
   # Core
   flutter_bloc: ^9.0.0
+  bloc_concurrency: ^0.3.0
   equatable: ^2.0.5
   get_it: ^8.0.0
   injectable: ^2.5.0
