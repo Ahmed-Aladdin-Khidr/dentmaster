@@ -17,12 +17,13 @@
 8. [Dependency Injection Rules](#8-dependency-injection-rules)
 9. [What Must Never Happen](#9-what-must-never-happen)
 10. [Git Workflow](#10-git-workflow)
-11. [Commit Message Format](#11-commit-message-format)
-12. [Branching Strategy](#12-branching-strategy)
-13. [Before You Commit — Checklist](#13-before-you-commit--checklist)
-14. [Before You Merge — Checklist](#14-before-you-merge--checklist)
-15. [How to Extend Without Breaking Things](#15-how-to-extend-without-breaking-things)
-16. [File Reference Map](#16-file-reference-map)
+11. [Machine-Specific Git Issues (This Dev Machine)](#11-machine-specific-git-issues-this-dev-machine)
+12. [Commit Message Format](#12-commit-message-format)
+13. [Branching Strategy](#13-branching-strategy)
+14. [Before You Commit — Checklist](#14-before-you-commit--checklist)
+15. [Before You Merge — Checklist](#15-before-you-merge--checklist)
+16. [How to Extend Without Breaking Things](#16-how-to-extend-without-breaking-things)
+17. [File Reference Map](#17-file-reference-map)
 
 ---
 
@@ -337,7 +338,69 @@ git branch -d feature/patient-search
 
 ---
 
-## 11. Commit Message Format
+## 11. Machine-Specific Git Issues (This Dev Machine)
+
+> These are known environmental constraints on the current Windows development machine.  
+> Do not attempt to work around them in ways not listed here — they will fail silently or leave the repo in a broken state.
+
+### SSL Certificate Problem — HTTPS Git Operations Fail
+
+**Symptom:**
+```
+fatal: unable to access 'https://github.com/...': SSL certificate problem: unable to get local issuer certificate
+```
+
+This affects every HTTPS git remote operation on this machine (push, pull, fetch, clone).  
+It also affects Flutter's own toolchain when fetching updates (`flutter upgrade`, `flutter pub get` on first run).
+
+**Root cause:** A corporate/network root certificate is not in the system's trusted certificate store, so OpenSSL rejects GitHub's certificate chain.
+
+**Confirmed working fix — local repo config only:**
+```bash
+# Run once per repo, inside the repo directory — does NOT affect global git config
+git config http.sslVerify false
+```
+
+This setting is stored in `.git/config` (not committed) and applies only to this repo.
+
+**For new clones or new repos on this machine** — run the command above immediately after `git init` or `git clone` before attempting any remote operations.
+
+**Do NOT use the global flag** (`git config --global http.sslVerify false`) — it disables SSL for all git operations system-wide and is a security risk.
+
+### SSH Remote — Wrong Account
+
+**Symptom:**
+```
+ERROR: Permission to Ahmed-Aladdin-Khidr/dentmaster.git denied to Ahmed1Aladdin.
+```
+
+The SSH key on this machine is registered to the GitHub account `Ahmed1Aladdin`, which does not have access to the `Ahmed-Aladdin-Khidr` organisation repos.
+
+**Do not use SSH remotes on this machine for this project.** Always use HTTPS:
+```
+https://github.com/Ahmed-Aladdin-Khidr/dentmaster.git
+```
+
+### Git Push Authentication
+
+GitHub no longer accepts account passwords over HTTPS. Use a **Personal Access Token (PAT)**:
+- Generate at: https://github.com/settings/tokens (classic token, `repo` scope is sufficient)
+- When git prompts for a password during push/pull, enter the PAT — not the GitHub account password
+- To avoid re-entering: use Git Credential Manager (already bundled with Git for Windows)
+
+### Checklist When Setting Up a New Repo on This Machine
+
+```bash
+git init
+# ... add files, commit ...
+git remote add origin https://github.com/Ahmed-Aladdin-Khidr/<repo>.git
+git config http.sslVerify false    # ← must do this before any push/pull
+git push -u origin main
+```
+
+---
+
+## 12. Commit Message Format
 
 Use **Conventional Commits** (https://www.conventionalcommits.org).
 
@@ -404,7 +467,7 @@ feat(appointment): wire image picker into appointment form
 
 ---
 
-## 12. Branching Strategy
+## 13. Branching Strategy
 
 ### Phase-Based Branches
 
@@ -443,7 +506,7 @@ git push origin v0.1.0
 
 ---
 
-## 13. Before You Commit — Checklist
+## 14. Before You Commit — Checklist
 
 Run through this before every `git commit`:
 
@@ -468,7 +531,7 @@ flutter analyze && flutter test
 
 ---
 
-## 14. Before You Merge — Checklist
+## 15. Before You Merge — Checklist
 
 ```
 [ ] Branch is rebased on latest main (no merge conflicts)
@@ -483,7 +546,7 @@ flutter analyze && flutter test
 
 ---
 
-## 15. How to Extend Without Breaking Things
+## 16. How to Extend Without Breaking Things
 
 ### Adding a New Field to an Existing Entity
 
@@ -518,7 +581,7 @@ flutter analyze && flutter test
 
 ---
 
-## 16. File Reference Map
+## 17. File Reference Map
 
 Quick navigation for agents and developers:
 
