@@ -11,6 +11,7 @@ import '../bloc/patient_detail/patient_detail_bloc.dart';
 import '../bloc/patient_detail/patient_detail_event.dart';
 import '../bloc/patient_detail/patient_detail_state.dart';
 import '../widgets/appointment_card.dart';
+import '../widgets/appointment_form.dart';
 
 class PatientDetailPage extends StatelessWidget {
   final String? patientId;
@@ -464,6 +465,11 @@ class _AppointmentTimelinePanel extends StatelessWidget {
                     final appt = patient.appointments[i];
                     return AppointmentCard(
                       appointment: appt,
+                      onEdit: () => AppointmentForm.show(
+                        context,
+                        patientId: patient.id,
+                        existingAppointment: appt,
+                      ),
                       onDelete: () =>
                           _confirmDeleteAppointment(context, appt),
                     );
@@ -477,7 +483,8 @@ class _AppointmentTimelinePanel extends StatelessWidget {
             child: OutlinedButton.icon(
               icon: const Icon(Icons.add),
               label: const Text('Add Appointment'),
-              onPressed: null, // Phase 6
+              onPressed: () =>
+                  AppointmentForm.show(context, patientId: patient.id),
             ),
           ),
         ),

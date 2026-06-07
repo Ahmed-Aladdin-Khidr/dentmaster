@@ -60,7 +60,11 @@ Future<void> initDependencies() async {
         getPatientById: sl(),
         updatePatient: sl(),
         deletePatient: sl(),
+        addAppointment: sl(),
+        updateAppointment: sl(),
         deleteAppointment: sl(),
+        addAppointmentImage: sl(),
+        deleteAppointmentImage: sl(),
       ));
 
   // Auth — Phase 9

@@ -1180,6 +1180,15 @@ Card:
 // [Confirm] is styled as a destructive (red) action
 ```
 
+### Deviations from Plan (recorded 2026-06-07)
+
+**`PatientDetailDeleted` name collision** — Both the event and the state originally had the generated name `PatientDetailDeleted` (freezed sealed types). This caused an `ambiguous_import` error at call sites that imported both files. Fixed by renaming the event subtype:
+- `PatientDetailEvent.deleted()` → `PatientDetailEvent.deleteRequested()`
+- Generated subtype: `PatientDetailDeleted` (event) → `PatientDetailDeleteRequested`
+- The state keeps the name `PatientDetailDeleted` (clearest semantic: "patient was deleted")
+
+All dispatch sites and handler registrations updated accordingly.
+
 ### Step 5.5 — Unsaved-Changes Guard
 
 Wrap `PatientDetailPage` with a `PopScope`:
