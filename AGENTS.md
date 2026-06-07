@@ -389,6 +389,30 @@ GitHub no longer accepts account passwords over HTTPS. Use a **Personal Access T
 - When git prompts for a password during push/pull, enter the PAT — not the GitHub account password
 - To avoid re-entering: use Git Credential Manager (already bundled with Git for Windows)
 
+### CMake SSL Error — `flutter run -d windows` Fails on First Build
+
+**Symptom:**
+```
+SSL connect error ... status_code: 35 ... cmake_install.cmake:213 (file): file INSTALL cannot find
+"D:/.../build/native_assets/windows": No error.
+```
+
+The CMake build step for `sqlite3_flutter_libs` downloads SQLite source from `sqlite.org` over HTTPS, which also fails due to the same corporate SSL issue.  
+Additionally, CMake's install step fails if `build/native_assets/windows` doesn't exist yet.
+
+**Confirmed working fixes:**
+
+1. Set `CMAKE_TLS_VERIFY=0` as an environment variable before running `flutter run`:
+   ```powershell
+   $env:CMAKE_TLS_VERIFY = '0'
+   flutter run -d windows
+   ```
+   This environment variable tells CMake to skip SSL certificate verification for its own HTTP downloads.
+
+2. `windows/CMakeLists.txt` already contains a `file(MAKE_DIRECTORY ...)` call that pre-creates the `build/native_assets/windows` directory — this is already committed, no action needed.
+
+> Note: `CMAKE_TLS_VERIFY=0` is only needed on the first build (when SQLite is downloaded). Subsequent builds skip the download and don't need it. After `flutter clean`, set it again for the next build.
+
 ### Checklist When Setting Up a New Repo on This Machine
 
 ```bash
