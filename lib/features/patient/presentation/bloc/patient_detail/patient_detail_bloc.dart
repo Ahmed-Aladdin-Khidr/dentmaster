@@ -7,6 +7,7 @@ import '../../../../../core/utils/image_utils.dart';
 import '../../../domain/entities/appointment_image.dart';
 import '../../../domain/usecases/add_appointment.dart';
 import '../../../domain/usecases/add_appointment_image.dart';
+import '../../../domain/usecases/create_patient.dart';
 import '../../../domain/usecases/delete_appointment.dart';
 import '../../../domain/usecases/delete_appointment_image.dart';
 import '../../../domain/usecases/delete_patient.dart';
@@ -18,6 +19,7 @@ import 'patient_detail_state.dart';
 
 class PatientDetailBloc extends Bloc<PatientDetailEvent, PatientDetailState> {
   final GetPatientById _getPatientById;
+  final CreatePatient _createPatient;
   final UpdatePatient _updatePatient;
   final DeletePatient _deletePatient;
   final AddAppointment _addAppointment;
@@ -28,6 +30,7 @@ class PatientDetailBloc extends Bloc<PatientDetailEvent, PatientDetailState> {
 
   PatientDetailBloc({
     required GetPatientById getPatientById,
+    required CreatePatient createPatient,
     required UpdatePatient updatePatient,
     required DeletePatient deletePatient,
     required AddAppointment addAppointment,
@@ -36,6 +39,7 @@ class PatientDetailBloc extends Bloc<PatientDetailEvent, PatientDetailState> {
     required AddAppointmentImage addAppointmentImage,
     required DeleteAppointmentImage deleteAppointmentImage,
   })  : _getPatientById = getPatientById,
+        _createPatient = createPatient,
         _updatePatient = updatePatient,
         _deletePatient = deletePatient,
         _addAppointment = addAppointment,
@@ -44,6 +48,8 @@ class PatientDetailBloc extends Bloc<PatientDetailEvent, PatientDetailState> {
         _addAppointmentImage = addAppointmentImage,
         _deleteAppointmentImage = deleteAppointmentImage,
         super(const PatientDetailState.initial()) {
+    on<PatientDetailCreateStarted>(_onCreateStarted);
+    on<PatientDetailCreated>(_onCreated);
     on<PatientDetailLoaded>(_onLoaded);
     on<PatientDetailEditStarted>(_onEditStarted);
     on<PatientDetailEditCancelled>(_onEditCancelled);
@@ -53,6 +59,29 @@ class PatientDetailBloc extends Bloc<PatientDetailEvent, PatientDetailState> {
     on<PatientDetailAppointmentAdded>(_onAppointmentAdded);
     on<PatientDetailAppointmentUpdated>(_onAppointmentUpdated);
     on<PatientDetailImageDeleted>(_onImageDeleted);
+  }
+
+  // ── Create handlers ─────────────────────────────────────────────────────
+
+  void _onCreateStarted(
+      PatientDetailCreateStarted event, Emitter<PatientDetailState> emit) {
+    emit(const PatientDetailState.createMode());
+  }
+
+  Future<void> _onCreated(
+      PatientDetailCreated event, Emitter<PatientDetailState> emit) async {
+    emit(const PatientDetailState.saving());
+    try {
+      await _createPatient(event.newPatient);
+      final refreshed = await _getPatientById(event.newPatient.id);
+      if (refreshed == null) {
+        emit(const PatientDetailState.failure('Patient not found after create.'));
+        return;
+      }
+      emit(PatientDetailState.viewMode(refreshed));
+    } catch (e) {
+      emit(PatientDetailState.failure(e.toString()));
+    }
   }
 
   // ── Patient handlers ────────────────────────────────────────────────────

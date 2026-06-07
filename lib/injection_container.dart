@@ -58,6 +58,7 @@ Future<void> initDependencies() async {
 
   sl.registerFactory(() => PatientDetailBloc(
         getPatientById: sl(),
+        createPatient: sl(),
         updatePatient: sl(),
         deletePatient: sl(),
         addAppointment: sl(),

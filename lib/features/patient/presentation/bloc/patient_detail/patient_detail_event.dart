@@ -8,6 +8,8 @@ part 'patient_detail_event.freezed.dart';
 @freezed
 sealed class PatientDetailEvent with _$PatientDetailEvent {
   const factory PatientDetailEvent.loaded(String patientId) = PatientDetailLoaded;
+  const factory PatientDetailEvent.createStarted() = PatientDetailCreateStarted;
+  const factory PatientDetailEvent.created(Patient newPatient) = PatientDetailCreated;
   const factory PatientDetailEvent.editStarted() = PatientDetailEditStarted;
   const factory PatientDetailEvent.editCancelled() = PatientDetailEditCancelled;
   const factory PatientDetailEvent.saved(Patient updated) = PatientDetailSaved;

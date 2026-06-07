@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/utils/date_formatter.dart';
+import '../../../../core/utils/image_utils.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../../../../core/widgets/confirm_dialog.dart';
 import '../../../../injection_container.dart';
@@ -32,8 +33,10 @@ class PatientDetailPage extends StatelessWidget {
     }
     return BlocProvider(
       create: (_) => sl<PatientDetailBloc>()
-        ..add(PatientDetailEvent.loaded(patientId!)),
-      child: _PatientDetailView(patientId: patientId!),
+        ..add(patientId != null
+            ? PatientDetailEvent.loaded(patientId!)
+            : const PatientDetailEvent.createStarted()),
+      child: _PatientDetailView(patientId: patientId),
     );
   }
 }
@@ -41,14 +44,17 @@ class PatientDetailPage extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class _PatientDetailView extends StatelessWidget {
-  final String patientId;
+  final String? patientId;
   const _PatientDetailView({required this.patientId});
 
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<PatientDetailBloc, PatientDetailState>(
       listener: (context, state) {
-        if (state is PatientDetailDeleted) {
+        if (state is PatientDetailViewMode && patientId == null) {
+          // New patient just created — replace create route with detail route.
+          context.replace('/patient/${state.patient.id}');
+        } else if (state is PatientDetailDeleted) {
           context.pop();
         } else if (state is PatientDetailFailure) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -76,6 +82,7 @@ class _PatientDetailView extends StatelessWidget {
           child: Scaffold(
             appBar: AppBar(
               title: switch (state) {
+                PatientDetailCreateMode() => const Text('New Patient'),
                 PatientDetailViewMode(:final patient) => Text(patient.fullName),
                 PatientDetailEditMode(:final patient) =>
                   Text('Editing: ${patient.fullName}'),
@@ -86,6 +93,7 @@ class _PatientDetailView extends StatelessWidget {
               PatientDetailInitial() ||
               PatientDetailLoading() =>
                 const Center(child: CircularProgressIndicator()),
+              PatientDetailCreateMode() => _buildCreatePane(context),
               PatientDetailViewMode(:final patient) =>
                 _buildTwoPane(context, patient, isEditing: false),
               PatientDetailEditMode(:final patient) =>
@@ -105,7 +113,9 @@ class _PatientDetailView extends StatelessWidget {
                       ElevatedButton(
                         onPressed: () => context
                             .read<PatientDetailBloc>()
-                            .add(PatientDetailEvent.loaded(patientId)),
+                            .add(patientId != null
+                                ? PatientDetailEvent.loaded(patientId!)
+                                : const PatientDetailEvent.createStarted()),
                         child: const Text('Retry'),
                       ),
                     ],
@@ -115,6 +125,33 @@ class _PatientDetailView extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildCreatePane(BuildContext context) {
+    final blankPatient = Patient(
+      id: generateLocalId(),
+      fullName: '',
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+    return SingleChildScrollView(
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 520),
+          child: _PatientInfoPanel(
+            patient: blankPatient,
+            isEditing: true,
+            saveButtonLabel: 'Create Patient',
+            onEditTap: () {},
+            onSaveTap: (newPatient) => context
+                .read<PatientDetailBloc>()
+                .add(PatientDetailEvent.created(newPatient)),
+            onCancelTap: () => context.pop(),
+            onDeleteTap: () {},
+          ),
+        ),
+      ),
     );
   }
 
@@ -170,6 +207,7 @@ class _PatientDetailView extends StatelessWidget {
 class _PatientInfoPanel extends StatefulWidget {
   final Patient patient;
   final bool isEditing;
+  final String saveButtonLabel;
   final VoidCallback onEditTap;
   final void Function(Patient updated) onSaveTap;
   final VoidCallback onCancelTap;
@@ -178,6 +216,7 @@ class _PatientInfoPanel extends StatefulWidget {
   const _PatientInfoPanel({
     required this.patient,
     required this.isEditing,
+    this.saveButtonLabel = 'Save',
     required this.onEditTap,
     required this.onSaveTap,
     required this.onCancelTap,
@@ -415,7 +454,7 @@ class _PatientInfoPanelState extends State<_PatientInfoPanel> {
             children: [
               FilledButton.icon(
                 icon: const Icon(Icons.save, size: 18),
-                label: const Text('Save'),
+                label: Text(widget.saveButtonLabel),
                 onPressed: _handleSave,
               ),
               const SizedBox(width: 8),
