@@ -731,6 +731,19 @@ git push origin main --tags
 - All datasource unit tests pass
 - App still launches: `flutter run -d windows`
 
+### Deviations from Plan (recorded 2026-06-07)
+
+**Drift-generated data class names** — The plan's Step 2.4 used `PatientData`, `AppointmentData`, `AppointmentImageData` as the generated type names. Drift actually generates `Patient`, `Appointment`, `AppointmentImage` (no `Data` suffix). `PatientsCompanion`, `AppointmentsCompanion`, `AppointmentImagesCompanion` are correct as written.
+
+**Impact on Phase 3:** The domain entities defined in Phase 3 use the same names (`Patient`, `Appointment`, `AppointmentImage`). Any file that imports both `app_database.dart` and a domain entity must use an import alias to avoid collision:
+```dart
+import '../../../../core/database/app_database.dart' as db;
+// Then use db.Patient, db.Appointment, db.AppointmentImage for Drift rows.
+```
+`PatientRepositoryImpl` and any mapper code must follow this pattern.
+
+**`AppDatabase.forTesting` constructor** — Added a named constructor `AppDatabase.forTesting(super.e)` to support in-memory Drift databases in unit tests. Not in original plan but required for Step 2.6.
+
 ---
 
 ## Phase 3 — Domain Layer
