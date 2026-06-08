@@ -42,9 +42,7 @@ class _LockScreenPageState extends State<LockScreenPage>
   void _submit() {
     final password = _controller.text.trim();
     if (password.isEmpty) return;
-    context
-        .read<AuthBloc>()
-        .add(AuthEvent.passwordSubmitted(password));
+    context.read<AuthBloc>().add(AuthEvent.passwordSubmitted(password));
   }
 
   @override
@@ -58,69 +56,92 @@ class _LockScreenPageState extends State<LockScreenPage>
             _shakeController.forward(from: 0);
           }
         },
-        child: Center(
-          child: SizedBox(
-            width: 360,
-            child: AnimatedBuilder(
-              animation: _shakeAnimation,
-              builder: (context, child) {
-                final offset =
-                    _shakeController.isAnimating ? _shakeAnimation.value * 8 : 0.0;
-                return Transform.translate(
-                  offset: Offset(offset * ((_shakeAnimation.value * 10).round().isEven ? 1 : -1), 0),
-                  child: child,
-                );
-              },
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.lock_outline,
-                      size: 64, color: theme.colorScheme.primary),
-                  const SizedBox(height: 16),
-                  Text('DentMaster',
-                      style: theme.textTheme.headlineMedium
-                          ?.copyWith(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
-                  Text('Enter your password to continue',
-                      style: theme.textTheme.bodyMedium
-                          ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-                  const SizedBox(height: 32),
-                  BlocBuilder<AuthBloc, AuthState>(
-                    builder: (context, state) {
-                      return PasswordField(
-                        controller: _controller,
-                        focusNode: _focusNode,
-                        labelText: 'Password',
-                        errorText:
-                            state is AuthFailure ? state.message : null,
-                        onSubmitted: (_) => _submit(),
-                      );
-                    },
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Image.asset('assets/images/bg-auth.jpg', fit: BoxFit.cover),
+            Container(color: Colors.black.withValues(alpha: 0.55)),
+            Center(
+              child: AnimatedBuilder(
+                animation: _shakeAnimation,
+                builder: (context, child) {
+                  final offset = _shakeController.isAnimating
+                      ? _shakeAnimation.value *
+                          8 *
+                          ((_shakeAnimation.value * 10).round().isEven ? 1 : -1)
+                      : 0.0;
+                  return Transform.translate(
+                    offset: Offset(offset, 0),
+                    child: child,
+                  );
+                },
+                child: Container(
+                  width: 380,
+                  padding: const EdgeInsets.all(32),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surface.withValues(alpha: 0.92),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.3),
+                        blurRadius: 24,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 16),
-                  BlocBuilder<AuthBloc, AuthState>(
-                    builder: (context, state) {
-                      final loading = state is AuthLoading;
-                      return SizedBox(
-                        width: double.infinity,
-                        child: FilledButton(
-                          onPressed: loading ? null : _submit,
-                          child: loading
-                              ? const SizedBox(
-                                  height: 18,
-                                  width: 18,
-                                  child: CircularProgressIndicator(
-                                      strokeWidth: 2, color: Colors.white),
-                                )
-                              : const Text('Unlock'),
-                        ),
-                      );
-                    },
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Image.asset('assets/icons/dental-service.ico',
+                          width: 64, height: 64),
+                      const SizedBox(height: 12),
+                      Text('DentMaster',
+                          style: theme.textTheme.headlineMedium
+                              ?.copyWith(fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 4),
+                      Text('Enter your password to continue',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant)),
+                      const SizedBox(height: 28),
+                      BlocBuilder<AuthBloc, AuthState>(
+                        builder: (context, state) {
+                          return PasswordField(
+                            controller: _controller,
+                            focusNode: _focusNode,
+                            labelText: 'Password',
+                            errorText:
+                                state is AuthFailure ? state.message : null,
+                            onSubmitted: (_) => _submit(),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      BlocBuilder<AuthBloc, AuthState>(
+                        builder: (context, state) {
+                          final loading = state is AuthLoading;
+                          return SizedBox(
+                            width: double.infinity,
+                            child: FilledButton(
+                              onPressed: loading ? null : _submit,
+                              child: loading
+                                  ? const SizedBox(
+                                      height: 18,
+                                      width: 18,
+                                      child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.white),
+                                    )
+                                  : const Text('Unlock'),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
-          ),
+          ],
         ),
       ),
     );

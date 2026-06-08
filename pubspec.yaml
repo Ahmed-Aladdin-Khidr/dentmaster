@@ -60,3 +60,9 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/images/bg.jpg
+    - assets/images/bg-auth.jpg
+    - assets/images/bg-patient.jpg
+    - assets/images/bg-settings.jpg
+    - assets/icons/dental-service.ico

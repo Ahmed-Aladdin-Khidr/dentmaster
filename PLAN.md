@@ -709,6 +709,7 @@ TABLE appointment_images
 - [ ] Migrate existing unencrypted DB to encrypted on upgrade
 - [ ] Update export/import to handle encrypted DB correctly
 - [ ] Update AGENTS.md and PLAN.md when this phase is started
+Security Note: Never include plain secrets on codebase repo, use env.
 
 ---
 

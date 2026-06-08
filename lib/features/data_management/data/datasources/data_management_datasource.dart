@@ -32,9 +32,8 @@ class DataManagementDatasourceImpl implements DataManagementDatasource {
         .customSelect('SELECT COUNT(*) AS c FROM appointment_images')
         .getSingle();
 
-    final appSupportDir = await getApplicationSupportDirectory();
-    final dbFile = File(p.join(appSupportDir.path, 'dentmaster.sqlite'));
-    final imagesDir = Directory(p.join(appSupportDir.path, 'images'));
+    final dbFile = File(await _getDbPath());
+    final imagesDir = Directory(await _getImagesDir());
 
     final dbSize = await dbFile.exists() ? await dbFile.length() : 0;
     final imgFolderSize = await _dirSize(imagesDir);
@@ -48,25 +47,45 @@ class DataManagementDatasourceImpl implements DataManagementDatasource {
     );
   }
 
+  // ── Helpers — paths ──────────────────────────────────────────────────────
+
+  // Asks SQLite for the actual on-disk path of the open database so we never
+  // have to guess the path that drift_flutter chose for this platform.
+  Future<String> _getDbPath() async {
+    final rows = await _db.customSelect('PRAGMA database_list').get();
+    for (final row in rows) {
+      if (row.read<String>('name') == 'main') {
+        return row.read<String>('file');
+      }
+    }
+    // Fallback — should never be reached while the DB is open.
+    final dir = await getApplicationSupportDirectory();
+    return p.join(dir.path, 'dentmaster.sqlite');
+  }
+
+  Future<String> _getImagesDir() async {
+    final appDir = await getApplicationSupportDirectory();
+    return p.join(appDir.path, 'images');
+  }
+
   // ── Export ───────────────────────────────────────────────────────────────
 
   @override
   Future<void> exportData(String destinationZipPath) async {
     await _db.customStatement('PRAGMA wal_checkpoint(FULL)');
 
-    final appSupportDir = await getApplicationSupportDirectory();
-    final dbPath = p.join(appSupportDir.path, 'dentmaster.sqlite');
-    final imagesPath = p.join(appSupportDir.path, 'images');
+    final dbPath = await _getDbPath();
+    final imagesPath = await _getImagesDir();
 
     final encoder = ZipFileEncoder();
     encoder.create(destinationZipPath);
     if (await File(dbPath).exists()) {
-      encoder.addFile(File(dbPath), 'dentmaster.sqlite');
+      await encoder.addFile(File(dbPath), 'dentmaster.sqlite');
     }
     if (await Directory(imagesPath).exists()) {
-      encoder.addDirectory(Directory(imagesPath), includeDirName: true);
+      await encoder.addDirectory(Directory(imagesPath), includeDirName: true);
     }
-    encoder.close();
+    await encoder.close();
   }
 
   // ── Preview Import ───────────────────────────────────────────────────────
@@ -75,7 +94,7 @@ class DataManagementDatasourceImpl implements DataManagementDatasource {
   Future<DataStats> previewImport(String zipPath) async {
     final tempDir = await Directory.systemTemp.createTemp('dent_import_');
     try {
-      _extractZip(zipPath, tempDir.path);
+      await _extractZip(zipPath, tempDir.path);
 
       final tempDbPath = p.join(tempDir.path, 'dentmaster.sqlite');
       if (!await File(tempDbPath).exists()) {
@@ -110,7 +129,7 @@ class DataManagementDatasourceImpl implements DataManagementDatasource {
         await tempDb.close();
       }
     } finally {
-      await tempDir.delete(recursive: true);
+      await _deleteTempDir(tempDir);
     }
   }
 
@@ -120,7 +139,7 @@ class DataManagementDatasourceImpl implements DataManagementDatasource {
   Future<void> importData(String zipPath) async {
     final tempDir = await Directory.systemTemp.createTemp('dent_import_apply_');
     try {
-      _extractZip(zipPath, tempDir.path);
+      await _extractZip(zipPath, tempDir.path);
 
       final tempDbPath = p.join(tempDir.path, 'dentmaster.sqlite');
       if (!await File(tempDbPath).exists()) {
@@ -128,13 +147,14 @@ class DataManagementDatasourceImpl implements DataManagementDatasource {
             'Invalid backup: dentmaster.sqlite not found in archive.');
       }
 
-      final appSupportDir = await getApplicationSupportDirectory();
-      final dbPath = p.join(appSupportDir.path, 'dentmaster.sqlite');
-      final imagesPath = p.join(appSupportDir.path, 'images');
+      final dbPath = await _getDbPath();
+      final imagesPath = await _getImagesDir();
 
       // Close DB before replacing the file.
       await _db.close();
 
+      final destFile = File(dbPath);
+      if (await destFile.exists()) await destFile.delete();
       await File(tempDbPath).copy(dbPath);
 
       final tempImagesDir = Directory(p.join(tempDir.path, 'images'));
@@ -146,16 +166,16 @@ class DataManagementDatasourceImpl implements DataManagementDatasource {
         await _copyDirectory(tempImagesDir, targetImagesDir);
       }
     } finally {
-      await tempDir.delete(recursive: true);
+      await _deleteTempDir(tempDir);
     }
   }
 
   // ── Helpers ──────────────────────────────────────────────────────────────
 
-  void _extractZip(String zipPath, String outputDir) {
+  Future<void> _extractZip(String zipPath, String outputDir) async {
     final inputStream = InputFileStream(zipPath);
     final archive = ZipDecoder().decodeBuffer(inputStream);
-    extractArchiveToDisk(archive, outputDir);
+    await extractArchiveToDisk(archive, outputDir);
     inputStream.close();
   }
 
@@ -176,6 +196,20 @@ class DataManagementDatasourceImpl implements DataManagementDatasource {
         await entity.copy(newPath);
       } else if (entity is Directory) {
         await _copyDirectory(entity, Directory(newPath));
+      }
+    }
+  }
+
+  // On Windows, SQLite releases WAL/SHM handles asynchronously after close().
+  // Retry deletion with back-off to avoid errno 145 (directory not empty).
+  Future<void> _deleteTempDir(Directory dir) async {
+    for (int attempt = 0; attempt < 5; attempt++) {
+      try {
+        await dir.delete(recursive: true);
+        return;
+      } on FileSystemException {
+        if (attempt == 4) rethrow;
+        await Future.delayed(Duration(milliseconds: 100 * (attempt + 1)));
       }
     }
   }

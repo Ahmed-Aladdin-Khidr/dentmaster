@@ -12,6 +12,8 @@ void main() async {
   await windowManager.ensureInitialized();
   await windowManager.setMinimumSize(const Size(1024, 700));
   await windowManager.setTitle('DentMaster');
+  await windowManager.center();
+  await windowManager.maximize();
 
   await initDependencies();
   await seedTestDataIfEmpty();

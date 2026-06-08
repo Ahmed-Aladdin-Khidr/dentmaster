@@ -31,11 +31,27 @@ class _DataManagementView extends StatelessWidget {
       listener: _handleStateChange,
       builder: (context, state) {
         return Scaffold(
-          appBar: AppBar(title: const Text('Data Management')),
-          body: switch (state) {
-            DataManagementImportSuccess() => _buildRestartPane(context),
-            _ => _buildMainPane(context, state),
-          },
+          extendBodyBehindAppBar: true,
+          appBar: AppBar(
+            title: const Text('Data Management'),
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            scrolledUnderElevation: 0,
+            foregroundColor: Colors.white,
+          ),
+          body: Stack(
+            fit: StackFit.expand,
+            children: [
+              Image.asset('assets/images/bg-settings.jpg', fit: BoxFit.cover),
+              Container(color: Colors.black.withValues(alpha: 0.45)),
+              SafeArea(
+                child: switch (state) {
+                  DataManagementImportSuccess() => _buildRestartPane(context),
+                  _ => _buildMainPane(context, state),
+                },
+              ),
+            ],
+          ),
         );
       },
     );
@@ -105,10 +121,10 @@ class _DataManagementView extends StatelessWidget {
           const SizedBox(height: 16),
           const Text(
             'Import complete',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
           ),
           const SizedBox(height: 8),
-          const Text('The app must restart to apply the imported data.'),
+          const Text('The app must restart to apply the imported data.', style: TextStyle(color: Colors.white)),
           const SizedBox(height: 24),
           FilledButton.icon(
             onPressed: () => exit(0),

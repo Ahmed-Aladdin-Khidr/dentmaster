@@ -69,7 +69,12 @@ class _PatientDetailView extends StatelessWidget {
             if (discard && context.mounted) context.pop();
           },
           child: Scaffold(
+            extendBodyBehindAppBar: true,
             appBar: AppBar(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              scrolledUnderElevation: 0,
+              foregroundColor: Colors.white,
               title: switch (state) {
                 PatientDetailCreateMode() => const Text('New Patient'),
                 PatientDetailViewMode(:final patient) => Text(patient.fullName),
@@ -78,7 +83,16 @@ class _PatientDetailView extends StatelessWidget {
                 _ => const Text('Patient Detail'),
               },
             ),
-            body: switch (state) {
+            body: Stack(
+              fit: StackFit.expand,
+              children: [
+                Image.asset('assets/images/bg-patient.jpg',
+                    fit: BoxFit.cover),
+                Container(color: Colors.black.withValues(alpha: 0.45)),
+                SafeArea(
+                  child: ColoredBox(
+                    color: Theme.of(context).colorScheme.surface,
+                    child: switch (state) {
               PatientDetailInitial() ||
               PatientDetailLoading() =>
                 const Center(child: CircularProgressIndicator()),
@@ -111,6 +125,10 @@ class _PatientDetailView extends StatelessWidget {
                   ),
                 ),
             },
+                  ),
+                  ),
+              ],
+            ),
           ),
         );
       },
